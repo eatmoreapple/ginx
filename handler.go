@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"unsafe"
 )
 
 // HandlerWrapper is a wrapper for gin.HandlerFunc that returns an error.
@@ -45,15 +46,12 @@ func (t HandlerFunc[T]) call(ctx *gin.Context, instance T) error {
 func (t HandlerFunc[T]) AsHandlerWrapper() HandlerWrapper {
 	// create a new instance of T
 	var item T
-	// convert it to any for type assertion
-	var kind any = &item
 	// if T implements FromContext(ctx *gin.Context) error, use it
-	if _, ok := kind.(interface{ FromContext(ctx *gin.Context) error }); ok {
+	if _, ok := any(&item).(interface{ FromContext(ctx *gin.Context) error }); ok {
 		// return a HandlerWrapper that calls FromContext and then the HandlerFunc
 		return func(ctx *gin.Context) error {
 			var instance T
-			var binder any = &instance
-			if err := binder.(interface{ FromContext(ctx *gin.Context) error }).FromContext(ctx); err != nil {
+			if err := any(&instance).(interface{ FromContext(ctx *gin.Context) error }).FromContext(ctx); err != nil {
 				return err
 			}
 			return t.call(ctx, instance)
@@ -70,10 +68,10 @@ func (t HandlerFunc[T]) AsHandlerWrapper() HandlerWrapper {
 }
 
 // GenericHandlerFunc is a function that handles requests.
-type GenericHandlerFunc[T any] func(context context.Context, req T) (any, error)
+type GenericHandlerFunc[T, E any] func(context context.Context, req T) (E, error)
 
 // JSON returns a HandlerWrapper that calls the GenericHandlerFunc and then responds with JSON.
-func (t GenericHandlerFunc[T]) JSON() HandlerWrapper {
+func (t GenericHandlerFunc[T, E]) JSON() HandlerWrapper {
 	var handler HandlerFunc[T] = func(ctx context.Context, req T) (Responder, error) {
 		resp, err := t(ctx, req)
 		if err != nil {
@@ -85,7 +83,7 @@ func (t GenericHandlerFunc[T]) JSON() HandlerWrapper {
 }
 
 // XML returns a HandlerWrapper that calls the GenericHandlerFunc and then responds with XML.
-func (t GenericHandlerFunc[T]) XML() HandlerWrapper {
+func (t GenericHandlerFunc[T, E]) XML() HandlerWrapper {
 	var handler HandlerFunc[T] = func(ctx context.Context, req T) (Responder, error) {
 		resp, err := t(ctx, req)
 		if err != nil {
@@ -96,7 +94,26 @@ func (t GenericHandlerFunc[T]) XML() HandlerWrapper {
 	return handler.AsHandlerWrapper()
 }
 
+// String returns a HandlerWrapper that calls the GenericHandlerFunc and then responds with String.
+func (t GenericHandlerFunc[T, E]) String() HandlerWrapper {
+	var instance E
+	// check if E is string
+	if _, ok := any(instance).(string); !ok {
+		panic("String() can only be used with GenericHandlerFunc[T] where E is string")
+	}
+	var handler HandlerFunc[T] = func(ctx context.Context, req T) (Responder, error) {
+		resp, err := t(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		// unsafe cast
+		// we know that E is string because we checked it above
+		return String(http.StatusOK, *(*string)(unsafe.Pointer(&resp))), nil
+	}
+	return handler.AsHandlerWrapper()
+}
+
 // G magically converts a GenericHandlerFunc to a GenericHandlerFunc and without generics type declaration.
-func G[T any](f GenericHandlerFunc[T]) GenericHandlerFunc[T] {
+func G[T, E any](f GenericHandlerFunc[T, E]) GenericHandlerFunc[T, E] {
 	return f
 }
