@@ -2,10 +2,14 @@ package ginx
 
 import (
 	"context"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"unsafe"
 )
+
+// ErrBinding is returned when binding fails.
+var ErrBinding = errors.New("binding error")
 
 // HandlerWrapper is a wrapper for gin.HandlerFunc that returns an error.
 type HandlerWrapper func(ctx *gin.Context) error
@@ -61,7 +65,7 @@ func (t HandlerFunc[T]) AsHandlerWrapper() HandlerWrapper {
 	return func(context *gin.Context) error {
 		var instance T
 		if err := context.ShouldBind(&instance); err != nil {
-			return err
+			return errors.Join(ErrBinding, err)
 		}
 		return t.call(context, instance)
 	}
