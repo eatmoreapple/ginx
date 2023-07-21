@@ -103,7 +103,7 @@ func (t GenericHandlerFunc[T, E]) String() HandlerWrapper {
 	var instance E
 	// check if E is string
 	if _, ok := any(instance).(string); !ok {
-		panic("String() can only be used with GenericHandlerFunc[T] where E is string")
+		panic("String() can only be used with GenericHandlerFunc[T, E] where E is string")
 	}
 	var handler HandlerFunc[T] = func(ctx context.Context, req T) (Responder, error) {
 		resp, err := t(ctx, req)
