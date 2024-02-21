@@ -121,3 +121,11 @@ func (t GenericHandlerFunc[T, E]) String() HandlerWrapper {
 func G[T, E any](f GenericHandlerFunc[T, E]) GenericHandlerFunc[T, E] {
 	return f
 }
+
+// Empty is a type that can be used to implement FromContext.
+type Empty struct{}
+
+// FromContext do nothing just for placeholder.
+func (*Empty) FromContext(_ *gin.Context) error {
+	return nil
+}
