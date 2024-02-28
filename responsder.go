@@ -46,26 +46,6 @@ func RedirectResponder(code int, location string) Responder {
 }
 
 var (
-	// JSON is a Responder that responds with a JSON body.
-	JSON = JSONResponder
-
-	// XML is a Responder that responds with a XML body.
-	XML = XMLResponder
-
-	// String is a Responder that responds with a string body.
-	String = StringResponder
-
-	// HTML is a Responder that responds with a HTML body.
-	HTML = HTMLResponder
-
-	// Data is a Responder that responds with a raw data body.
-	Data = DataResponder
-
-	// Redirect is a Responder that responds with a redirect.
-	Redirect = RedirectResponder
-)
-
-var (
 	// NoContentResponder is a Responder that responds with a 204 No Content status code.
 	NoContentResponder = ResponderFunc(func(ctx *gin.Context) { ctx.Status(204) })
 

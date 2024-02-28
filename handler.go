@@ -8,9 +8,6 @@ import (
 	"unsafe"
 )
 
-// ErrBinding is returned when binding fails.
-var ErrBinding = errors.New("binding error")
-
 // HandlerWrapper is a wrapper for gin.HandlerFunc that returns an error.
 type HandlerWrapper func(ctx *gin.Context) error
 
@@ -48,14 +45,14 @@ func (t HandlerFunc[T]) call(ctx *gin.Context, instance T) error {
 
 // AsHandlerWrapper converts the HandlerFunc to a HandlerWrapper.
 func (t HandlerFunc[T]) AsHandlerWrapper() HandlerWrapper {
-	// create a new instance of T
+	// create a new instance of t
 	var item T
-	// if T implements FromContext(ctx *gin.Context) error, use it
-	if _, ok := any(&item).(interface{ FromContext(ctx *gin.Context) error }); ok {
+	// if t implements FromContext(ctx *gin.Context) error, use it
+	if _, ok := any(&item).(ContextBinder); ok {
 		// return a HandlerWrapper that calls FromContext and then the HandlerFunc
 		return func(ctx *gin.Context) error {
 			var instance T
-			if err := any(&instance).(interface{ FromContext(ctx *gin.Context) error }).FromContext(ctx); err != nil {
+			if err := any(&instance).(ContextBinder).FromContext(ctx); err != nil {
 				return err
 			}
 			return t.call(ctx, instance)
@@ -81,7 +78,7 @@ func (t GenericHandlerFunc[T, E]) JSON() HandlerWrapper {
 		if err != nil {
 			return nil, err
 		}
-		return JSON(http.StatusOK, resp), nil
+		return JSONResponder(http.StatusOK, resp), nil
 	}
 	return handler.AsHandlerWrapper()
 }
@@ -93,7 +90,7 @@ func (t GenericHandlerFunc[T, E]) XML() HandlerWrapper {
 		if err != nil {
 			return nil, err
 		}
-		return XML(http.StatusOK, resp), nil
+		return XMLResponder(http.StatusOK, resp), nil
 	}
 	return handler.AsHandlerWrapper()
 }
@@ -103,7 +100,7 @@ func (t GenericHandlerFunc[T, E]) String() HandlerWrapper {
 	var instance E
 	// check if E is string
 	if _, ok := any(instance).(string); !ok {
-		panic("String() can only be used with GenericHandlerFunc[T, E] where E is string")
+		panic("String() can only be used with GenericHandlerFunc[t, E] where E is string")
 	}
 	var handler HandlerFunc[T] = func(ctx context.Context, req T) (Responder, error) {
 		resp, err := t(ctx, req)
@@ -112,7 +109,7 @@ func (t GenericHandlerFunc[T, E]) String() HandlerWrapper {
 		}
 		// unsafe cast
 		// we know that E is string because we checked it above
-		return String(http.StatusOK, *(*string)(unsafe.Pointer(&resp))), nil
+		return StringResponder(http.StatusOK, *(*string)(unsafe.Pointer(&resp))), nil
 	}
 	return handler.AsHandlerWrapper()
 }
