@@ -45,10 +45,8 @@ func (t HandlerFunc[T]) call(ctx *gin.Context, instance T) error {
 
 // AsHandlerWrapper converts the HandlerFunc to a HandlerWrapper.
 func (t HandlerFunc[T]) AsHandlerWrapper() HandlerWrapper {
-	// create a new instance of t
-	var item T
 	// if t implements FromContext(ctx *gin.Context) error, use it
-	if _, ok := any(&item).(ContextBinder); ok {
+	if _, ok := any((*T)(nil)).(ContextBinder); ok {
 		// return a HandlerWrapper that calls FromContext and then the HandlerFunc
 		return func(ctx *gin.Context) error {
 			var instance T
@@ -97,9 +95,8 @@ func (t GenericHandlerFunc[T, E]) XML() HandlerWrapper {
 
 // String returns a HandlerWrapper that calls the GenericHandlerFunc and then responds with String.
 func (t GenericHandlerFunc[T, E]) String() HandlerWrapper {
-	var instance E
 	// check if E is string
-	if _, ok := any(instance).(string); !ok {
+	if _, ok := any((*E)(nil)).(*string); !ok {
 		panic("String() can only be used with GenericHandlerFunc[t, E] where E is string")
 	}
 	var handler HandlerFunc[T] = func(ctx context.Context, req T) (Responder, error) {
