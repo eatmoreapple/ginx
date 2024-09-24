@@ -44,3 +44,11 @@ func (j *Json[T]) FromContext(ctx *gin.Context) error {
 func (j *Json[T]) Unwrap() T {
 	return j.T
 }
+
+// FromContext binds the request from the given context.
+func FromContext(c *gin.Context, a any) error {
+	if err := c.ShouldBind(a); err != nil {
+		return errors.Join(ErrBinding, err)
+	}
+	return nil
+}

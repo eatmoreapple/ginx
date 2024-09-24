@@ -2,7 +2,6 @@ package ginx
 
 import (
 	"context"
-	"errors"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"unsafe"
@@ -59,8 +58,8 @@ func (t HandlerFunc[T]) AsHandlerWrapper() HandlerWrapper {
 	// otherwise, return a HandlerWrapper that calls ShouldBind and then the HandlerFunc
 	return func(context *gin.Context) error {
 		var instance T
-		if err := context.ShouldBind(&instance); err != nil {
-			return errors.Join(ErrBinding, err)
+		if err := FromContext(context, &instance); err != nil {
+			return err
 		}
 		return t.call(context, instance)
 	}
