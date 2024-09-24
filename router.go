@@ -44,8 +44,8 @@ func (r *Router) HEAD(path string, ws ...HandlerWrapper) {
 }
 
 func (r *Router) Handle(method, path string, ws ...HandlerWrapper) {
+	group := append(r.middlewares, ws...)
 	var handler gin.HandlerFunc = func(ctx *gin.Context) {
-		group := append(r.middlewares, ws...)
 		group.ServeHTTP(ctx, r.ErrorHandler)
 	}
 	r.route.Handle(method, path, handler)
