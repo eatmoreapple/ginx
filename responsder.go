@@ -1,6 +1,9 @@
 package ginx
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/render"
+)
 
 // Responder is a type that can respond to a request.
 type Responder interface {
@@ -43,6 +46,11 @@ func DataResponder(code int, contentType string, data []byte) Responder {
 // RedirectResponder returns a Responder that responds with a redirect.
 func RedirectResponder(code int, location string) Responder {
 	return ResponderFunc(func(ctx *gin.Context) { ctx.Redirect(code, location) })
+}
+
+// RenderResponder returns a Responder that responds with a render.Render.
+func RenderResponder(code int, r render.Render) Responder {
+	return ResponderFunc(func(ctx *gin.Context) { ctx.Render(code, r) })
 }
 
 var (

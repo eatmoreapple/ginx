@@ -3,6 +3,7 @@ package ginx
 import (
 	"context"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/render"
 	"net/http"
 	"unsafe"
 )
@@ -106,6 +107,22 @@ func (t GenericHandlerFunc[T, E]) String() HandlerWrapper {
 		// unsafe cast
 		// we know that E is string because we checked it above
 		return StringResponder(http.StatusOK, *(*string)(unsafe.Pointer(&resp))), nil
+	}
+	return handler.AsHandlerWrapper()
+}
+
+func (t GenericHandlerFunc[T, E]) Render() HandlerWrapper {
+	switch any((*E)(nil)).(type) {
+	case render.Render, *render.Render:
+	default:
+		panic("Render() can only be used with GenericHandlerFunc[t, E] where E is render.Render")
+	}
+	var handler HandlerFunc[T] = func(ctx context.Context, req T) (Responder, error) {
+		resp, err := t(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		return RenderResponder(http.StatusOK, any(resp).(render.Render)), nil
 	}
 	return handler.AsHandlerWrapper()
 }
